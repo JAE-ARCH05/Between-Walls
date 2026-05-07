@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Archive — Between Walls</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#F5F3EE;color:#1A1A1A}
+nav{width:100%;border-bottom:1px solid #E0DDD8;background:#F5F3EE;position:sticky;top:0;z-index:100}
+.nav-inner{max-width:700px;margin:0 auto;padding:0 24px;display:flex;align-items:baseline}
+.nav-title{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:0.5px;color:#1A1A1A;padding:16px 0;margin-right:auto;text-decoration:none}
+.nav-title span{font-size:10px;color:#AAA;margin-left:6px;letter-spacing:1px}
+.nav-links{display:flex}
+.nav-link{font-family:'DM Mono',monospace;font-size:11px;color:#AAA;text-decoration:none;padding:16px 16px;letter-spacing:0.5px;border-bottom:2px solid transparent;transition:color 0.15s,border-color 0.15s}
+.nav-link:hover{color:#1A1A1A}
+.nav-link.active{color:#1A1A1A;border-bottom-color:#1A1A1A}
+
+#app{max-width:700px;margin:0 auto;padding:40px 24px 80px}
+.page-header{margin-bottom:36px}
+.page-title{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:2px;color:#AAA;margin-bottom:4px}
+.page-count{font-size:11px;color:#BBB;font-family:'DM Mono',monospace}
+
+/* 연도 그룹 */
+.year-group{margin-bottom:40px}
+.year-label{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;color:#CCC;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #E8E5E0}
+
+/* 글 카드 */
+.post-row{display:grid;grid-template-columns:90px 1fr auto;align-items:baseline;gap:16px;padding:14px 0;border-bottom:1px solid #EEEAE4;text-decoration:none;color:inherit;cursor:pointer;transition:background 0.1s}
+.post-row:hover{background:#EFEDE8;margin:0 -12px;padding-left:12px;padding-right:12px;border-radius:6px;border-bottom-color:transparent}
+.post-date{font-family:'DM Mono',monospace;font-size:11px;color:#AAA;white-space:nowrap}
+.post-titles{display:flex;flex-direction:column;gap:2px}
+.post-title-ko{font-size:14px;font-weight:500;color:#1A1A1A;line-height:1.4}
+.post-title-en{font-size:11px;color:#AAA;font-family:'DM Mono',monospace;letter-spacing:0.2px}
+.post-gallery{font-family:'DM Mono',monospace;font-size:10px;color:#BBB;white-space:nowrap;text-align:right}
+.post-arrow{font-size:12px;color:#CCC}
+.filter-btn{
+  font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.5px;
+  padding:5px 12px;border-radius:20px;border:1px solid #D5D1C9;
+  background:transparent;color:#888;cursor:pointer;transition:all 0.15s;
+}
+.filter-btn:hover{color:#1A1A1A;border-color:#999}
+.filter-btn.active{background:#1A1A1A;color:#F5F3EE;border-color:#1A1A1A}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="nav-title" href="index.html">BETWEEN WALLS <span>뉴욕 갤러리 아카이브</span></a>
+    <div class="nav-links">
+      <a class="nav-link" href="index.html">MAP</a>
+      <a class="nav-link active" href="archive.html">ARCHIVE</a>
+      <a class="nav-link" href="about.html">ABOUT</a>
+    </div>
+  </div>
+</nav>
+
+<div id="app">
+  <div class="page-header">
+    <div class="page-title">ARCHIVE · 아카이브</div>
+    <div class="page-count" id="post-count"></div>
+  </div>
+  <div id="region-filter" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:32px">
+    <button class="filter-btn active" onclick="filterRegion('all',this)">All · 전체</button>
+    <button class="filter-btn" onclick="filterRegion('nyc',this)" style="--c:#7F77DD">New York City</button>
+    <button class="filter-btn" onclick="filterRegion('upstate',this)" style="--c:#7F77DD">↑ Upstate NY</button>
+    <button class="filter-btn" onclick="filterRegion('longisland',this)" style="--c:#1D9E75">Long Island →</button>
+    <button class="filter-btn" onclick="filterRegion('nj',this)" style="--c:#EF9F27">← New Jersey</button>
+    <button class="filter-btn" onclick="filterRegion('other',this)" style="--c:#D4537E">✈ Other Places</button>
+  </div>
+  <div id="posts-list"></div>
+</div>
+
+<script>
+// ── 글 목록 — 새 글 추가할 때 여기에 추가 ─────────────────────
+// 최신순으로 정렬해서 넣어주세요
+// region: 'nyc' | 'upstate' | 'longisland' | 'nj' | 'other'
+// ── region 필드 추가: 'nyc' | 'upstate' | 'longisland' | 'newjersey' | 'elsewhere'
+const REGION_META = {
+  upstate:    { name:'Upstate New York', nameKo:'업스테이트 뉴욕', color:'#7F77DD' },
+  longisland: { name:'Long Island',      nameKo:'롱 아일랜드',     color:'#1D9E75' },
+  newjersey:  { name:'New Jersey',       nameKo:'뉴저지',          color:'#EF9F27' },
+  elsewhere:  { name:'Other States / Countries', nameKo:'다른 주 / 해외', color:'#D4537E' },
+  nyc:        { name:'New York City',    nameKo:'뉴욕시',          color:'#AAA'    },
+};
+
+const POSTS = [
+  { slug:"pioneer-0425",    date:"2026.04.25", title:"예술·음악·과학이 만나는 곳",     titleEn:"Where Art Meets Music & Science",  gallery:"Pioneer Works",              district:"Red Hook"         },
+  { slug:"studio-0420",     date:"2026.04.20", title:"흑인 예술의 현재",               titleEn:"Black Art Today",                  gallery:"Studio Museum in Harlem",    district:"Harlem"           },
+  { slug:"ps1-0418",        date:"2026.04.18", title:"Warm Up 시즌",                  titleEn:"Warm Up Season",                   gallery:"MoMA PS1",                   district:"Long Island City" },
+  { slug:"pace-0408",       date:"2026.04.08", title:"물질과 비물질 사이",             titleEn:"Between Matter & Immatter",        gallery:"Pace Gallery",               district:"Chelsea"          },
+  { slug:"gagosian-0415",   date:"2026.04.15", title:"캔버스 위의 침묵",              titleEn:"Silence on Canvas",                gallery:"Gagosian",                   district:"Chelsea"          },
+  { slug:"smack-0402",      date:"2026.04.02", title:"벽돌 건물 안의 현대적 설치",    titleEn:"Modern Installation in Brick",     gallery:"Smack Mellon",               district:"DUMBO"            },
+  { slug:"met-0330",        date:"2026.03.30", title:"고요한 혁명",                   titleEn:"Quiet Revolution",                 gallery:"The Met",                    district:"Upper East Side"  },
+  { slug:"elmuseo-0310",    date:"2026.03.10", title:"라틴 아메리카 현대미술의 힘",   titleEn:"Power of Latin American Art",      gallery:"El Museo del Barrio",        district:"Harlem"           },
+  { slug:"luhring-0410",    date:"2026.04.10", title:"중세부터 디지털까지",            titleEn:"Medieval to Digital",              gallery:"Luhring Augustine Bushwick", district:"Bushwick"         },
+  { slug:"zwirner-0320",    date:"2026.03.20", title:"물성과 개념 사이",              titleEn:"Between Material & Concept",       gallery:"David Zwirner",              district:"Chelsea"          },
+  { slug:"hw-soho-0322",    date:"2026.03.22", title:"색이 감정이 될 때",             titleEn:"When Color Becomes Emotion",       gallery:"Hauser & Wirth SoHo",        district:"SoHo"             },
+  { slug:"pierogi-0325",    date:"2026.03.25", title:"플랫파일의 세계",               titleEn:"World of the Flat File",           gallery:"Pierogi Gallery",            district:"Williamsburg"     },
+  { slug:"bogart-0301",     date:"2026.03.01", title:"창고 안의 20개 갤러리",         titleEn:"20 Galleries in a Warehouse",      gallery:"BogArt",                     district:"Bushwick"         },
+  { slug:"bronxmuseum-0212",date:"2026.02.12", title:"브롱스의 목소리",               titleEn:"Voice of the Bronx",               gallery:"Bronx Museum of the Arts",   district:"South Bronx"      },
+  { slug:"guggenheim-0205", date:"2026.02.05", title:"나선형 공간과 전시",             titleEn:"The Spiral & the Show",            gallery:"Guggenheim",                 district:"Upper East Side"  },
+  { slug:"newmuseum-0218",  date:"2026.02.18", title:"퍼포먼스 아트의 오늘",          titleEn:"Performance Art Today",            gallery:"New Museum",                 district:"Lower East Side"  },
+  { slug:"half-0228",       date:"2026.02.28", title:"작지만 강한 공간",              titleEn:"Small but Fierce",                 gallery:"Half Gallery",               district:"East Village"     },
+  { slug:"ftownhall-0214",  date:"2026.02.14", title:"퀸즈의 다문화 예술",            titleEn:"Queens Multicultural Art",         gallery:"Flushing Town Hall",         district:"Flushing"         },
+  { slug:"gagosian-0210",   date:"2026.02.10", title:"두 번째 방문",                  titleEn:"Second Visit",                     gallery:"Gagosian",                   district:"Chelsea"          },
+  { slug:"met-0115",        date:"2026.01.15", title:"이집트 컬렉션",                 titleEn:"Egyptian Collection",              gallery:"The Met",                    district:"Upper East Side"  },
+  { slug:"wallach-0130",    date:"2026.01.30", title:"아카데믹하지만 신선한",          titleEn:"Academic Yet Fresh",               gallery:"Wallach Art Gallery",        district:"Washington Heights"},
+  { slug:"marks-0122",      date:"2026.01.22", title:"조용하고 집중된 공간",           titleEn:"Quiet & Concentrated Space",       gallery:"Matthew Marks",              district:"Chelsea"          },
+  { slug:"drawing-0108",    date:"2026.01.08", title:"드로잉의 힘",                   titleEn:"The Power of Drawing",             gallery:"The Drawing Center",         district:"SoHo"             },
+  { slug:"ps1-0125",        date:"2026.01.25", title:"텅 빈 공간들이 작품처럼",        titleEn:"Empty Rooms as Artwork",           gallery:"MoMA PS1",                   district:"Long Island City" },
+  { slug:"noguchi-0308",    date:"2026.03.08", title:"돌과 빛의 대화",                titleEn:"Dialogue of Stone & Light",        gallery:"Noguchi Museum",             district:"Long Island City" },
+];
+
+// ── URL에서 region 파라미터 읽기 ──────────────────────────
+const urlParams = new URLSearchParams(window.location.search);
+const activeRegion = urlParams.get('region') || 'all';
+
+// ── 필터 탭 UI ────────────────────────────────────────────
+const filterBar = document.createElement('div');
+filterBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px';
+const filters = [
+  { id:'all',        label:'All · 전체' },
+  { id:'nyc',        label:'New York City' },
+  { id:'upstate',    label:'↑ Upstate NY' },
+  { id:'longisland', label:'Long Island →' },
+  { id:'newjersey',  label:'← New Jersey' },
+  { id:'elsewhere',  label:'✈ Elsewhere' },
+];
+filters.forEach(f => {
+  const btn = document.createElement('a');
+  const meta = REGION_META[f.id];
+  const color = meta ? meta.color : '#888';
+  const isActive = f.id === activeRegion;
+  btn.href = f.id === 'all' ? 'archive.html' : `archive.html?region=${f.id}`;
+  btn.textContent = f.label;
+  btn.style.cssText = `
+    font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.4px;
+    padding:4px 12px;border-radius:20px;text-decoration:none;
+    border:1px solid ${isActive ? color : '#E0DDD8'};
+    color:${isActive ? color : '#AAA'};
+    background:${isActive ? color+'18' : 'transparent'};
+    transition:all 0.15s;
+  `;
+  filterBar.appendChild(btn);
+});
+document.getElementById('app').insertBefore(filterBar, document.getElementById('posts-list'));
+
+// 연도별 그룹
+const byYear = {};
+
+// URL param으로 초기 필터
+const urlRegion = new URLSearchParams(window.location.search).get('region');
+let currentRegion = urlRegion || 'all';
+
+function filterRegion(region, btn){
+  currentRegion = region;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPosts();
+}
+
+function renderPosts(){
+  const filtered = currentRegion === 'all'
+    ? POSTS
+    : POSTS.filter(p => (p.region || 'nyc') === currentRegion);
+
+  document.getElementById('post-count').textContent =
+    `${filtered.length}편 · ${filtered.length} posts`;
+
+  const byYear = {};
+  filtered.forEach(p => {
+    const y = p.date.split('.')[0];
+    if(!byYear[y]) byYear[y]=[];
+    byYear[y].push(p);
+  });
+
+  const list = document.getElementById('posts-list');
+  list.innerHTML = '';
+
+  if(filtered.length === 0){
+    list.innerHTML = '<div style="font-family:'DM Mono',monospace;font-size:12px;color:#BBB;padding:40px 0">아직 기록이 없어요 · No posts yet</div>';
+    return;
+  }
+
+  Object.keys(byYear).sort((a,b)=>b-a).forEach(year => {
+    const grp = document.createElement('div');
+    grp.className = 'year-group';
+    grp.innerHTML = `<div class="year-label">${year}</div>`;
+    byYear[year].forEach(p => {
+      const row = document.createElement('a');
+      row.className = 'post-row';
+      row.href = `posts/${p.slug}.html`;
+      row.innerHTML = `
+        <div class="post-date">${p.date}</div>
+        <div class="post-titles">
+          <div class="post-title-ko">${p.title}</div>
+          <div class="post-title-en">${p.titleEn}</div>
+        </div>
+        <div class="post-gallery">${p.gallery}<br><span style="color:#DDD">${p.district}</span></div>`;
+      grp.appendChild(row);
+    });
+    list.appendChild(grp);
+  });
+
+  // 초기 필터버튼 활성화
+  if(urlRegion){
+    document.querySelectorAll('.filter-btn').forEach(b=>{
+      if(b.getAttribute('onclick').includes(urlRegion)) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+  }
+}
+
+// 기존 렌더링 제거 — renderPosts()로 대체
+Object.keys({}).sort((a,b)=>b-a).forEach(year => {
+  const grp = document.createElement('div');
+  grp.className = 'year-group';
+  grp.innerHTML = `<div class="year-label">${year}</div>`;
+  byYear[year].forEach(p => {
+    const row = document.createElement('a');
+    row.className = 'post-row';
+    row.href = `posts/${p.slug}.html`;
+    row.innerHTML = `
+      <div class="post-date">${p.date}</div>
+      <div class="post-titles">
+        <div class="post-title-ko">${p.title}</div>
+        <div class="post-title-en">${p.titleEn}</div>
+      </div>
+      <div class="post-gallery">${p.gallery}<br><span style="color:#DDD">${p.district}</span></div>`;
+    grp.appendChild(row);
+  });
+  list.appendChild(grp);
+});
+</script>
+</body>
+</html>
