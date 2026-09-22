@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Between Walls — NYC Gallery Archive</title>
+<link rel="preconnect" href="https://tile.openstreetmap.org"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -43,10 +44,19 @@ nav{width:100%;border-bottom:1px solid #E0DDD8;background:#F5F3EE;position:stick
 #bar-vibe{font-size:11px;color:#999;margin-top:1px}
 #bar-count{font-family:'DM Mono',monospace;font-size:10px;color:#BBB;margin-left:auto;white-space:nowrap}
 
-#map-wrap{width:100%;aspect-ratio:1/1;border:1px solid #E0DDD8;border-radius:10px;overflow:hidden;margin-top:20px}
+#map-wrap{position:relative;width:100%;aspect-ratio:1/1;border:1px solid #E0DDD8;border-radius:10px;overflow:hidden;margin-top:20px}
 #map-wrap.detail-mode{border-radius:0 0 10px 10px;margin-top:0}
 #map{width:100%;height:100%}
-#map .leaflet-tile-pane{filter:grayscale(1)}
+#region-nav{position:absolute;inset:0;z-index:450;pointer-events:none}
+#map-wrap.detail-mode #region-nav{display:none}
+.region-edge{position:absolute;pointer-events:auto;display:flex;align-items:center;gap:6px;min-height:32px;padding:7px 10px;border:1px solid #D5D1C9;border-radius:5px;background:#FFFEFB;color:var(--region-color);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.4px;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,0.08);white-space:nowrap}
+.region-edge:hover{background:#F5F3EE;border-color:currentColor}
+.region-edge:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.region-edge[data-region="upstate"]{top:12px;left:50%;transform:translateX(-50%)}
+.region-edge[data-region="west"]{left:12px;top:50%;transform:translateY(-50%)}
+.region-edge[data-region="longisland"]{right:12px;top:50%;transform:translateY(-50%)}
+.region-edge[data-region="elsewhere"]{bottom:28px;left:50%;transform:translateX(-50%)}
+@media(max-width:480px){.region-edge{font-size:9px;padding:6px 8px}.region-edge[data-region="west"]{left:8px}.region-edge[data-region="longisland"]{right:8px}}
 
 #legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
 .leg-item{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:#888;cursor:pointer;padding:2px 0}
@@ -99,7 +109,7 @@ nav{width:100%;border-bottom:1px solid #E0DDD8;background:#F5F3EE;position:stick
     <div><div id="bar-name"></div><div id="bar-vibe"></div></div>
     <span id="bar-count"></span>
   </div>
-  <div id="map-wrap"><div id="map"></div></div>
+  <div id="map-wrap"><div id="map"></div><div id="region-nav" role="group" aria-label="Explore regions"></div></div>
   <div id="legend"></div>
 </div>
 
@@ -187,10 +197,10 @@ const D={
   ]},
 };
 
-const map=L.map('map',{zoomControl:false,scrollWheelZoom:false,doubleClickZoom:false,dragging:false,touchZoom:false,boxZoom:false,keyboard:false});
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',maxZoom:19}).addTo(map);
+const map=L.map('map',{zoomControl:false,scrollWheelZoom:false,doubleClickZoom:false,dragging:false,touchZoom:false,boxZoom:false,keyboard:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',maxZoom:19,detectRetina:true,updateWhenIdle:true,updateWhenZooming:false,keepBuffer:1}).addTo(map);
 
-let dL=[],pL=[],regionMarkers=[];
+let dL=[],pL=[];
 let activeView={type:'home',id:null};
 let viewBounds=null,viewMaxZoom=15;
 
@@ -198,17 +208,16 @@ let viewBounds=null,viewMaxZoom=15;
 function clearView(){
   if(viewBounds)map.stop();
   map.closePopup();
-  [...dL,...pL,...regionMarkers].forEach(l=>map.removeLayer(l));
+  [...dL,...pL].forEach(l=>map.removeLayer(l));
   dL=[];pL=[];
 }
 
-function fitView(bounds,maxZoom=15,animate=true){
+function fitView(bounds,maxZoom=15){
   viewBounds=L.latLngBounds(bounds);
   viewMaxZoom=maxZoom;
   map.invalidateSize({pan:false});
-  const options={padding:[32,32],maxZoom,duration:0.5};
-  if(animate)map.flyToBounds(viewBounds,options);
-  else map.fitBounds(viewBounds,options);
+  // Request the destination tiles directly, without stretching old tiles in flight.
+  map.fitBounds(viewBounds,{padding:[32,32],maxZoom,animate:false});
 }
 
 function markActiveLegend(){
@@ -285,14 +294,13 @@ function showPop(g){
   L.popup({offset:[0,-10],maxWidth:265}).setLatLng([g.lat,g.lng]).setContent(c).openOn(map);
 }
 
-function showHome(animate=true){
+function showHome(){
   clearView();
   activeView={type:'home',id:null};
   document.getElementById('topbar').style.display='none';
   document.getElementById('map-wrap').classList.remove('detail-mode');
   drawDistricts();
-  regionMarkers.forEach(marker=>marker.addTo(map));
-  fitView(HOME_BOUNDS,15,animate);
+  fitView(HOME_BOUNDS);
   markActiveLegend();
 }
 document.getElementById('back-btn').addEventListener('click',()=>showHome());
@@ -352,19 +360,13 @@ const REGION_GALLERIES = {
 // 방향 화살표 마커
 // ════════════════════════════════════════════════════
 const REGIONS = [
-  { id:'upstate',    arrow:'↑', label:'UPSTATE',
-    lat:40.828, lng:-73.955, color:'#7F77DD' },
-  { id:'elsewhere',  arrow:'✈', label:'OTHER STATES / COUNTRIES',
-    lat:40.800, lng:-73.905, color:'#D4537E' },
-  { id:'longisland', arrow:'→', label:'LONG ISLAND',
-    lat:40.736, lng:-73.870, color:'#1D9E75' },
-  { id:'west',       arrow:'←', label:'WEST',
-    lat:40.745, lng:-74.022, color:'#EF9F27' },
+  {id:'upstate',arrow:'↑',label:'UPSTATE',color:'#7F77DD'},
+  {id:'elsewhere',arrow:'✈',label:'OTHER STATES / COUNTRIES',color:'#D4537E'},
+  {id:'longisland',arrow:'→',label:'LONG ISLAND',color:'#1D9E75'},
+  {id:'west',arrow:'←',label:'WEST',color:'#EF9F27'},
 ];
 
-// Include every clickable district and direction marker in the overview.
 const HOME_BOUNDS = L.latLngBounds(Object.values(D).flatMap(d=>d.bounds));
-REGIONS.forEach(r=>HOME_BOUNDS.extend([r.lat,r.lng]));
 
 function clearRegionPins() {
   pL.forEach(l => map.removeLayer(l));
@@ -403,16 +405,16 @@ function flyRegion(r) {
   markActiveLegend();
 }
 
-// 화살표 마커 지도에 추가
-REGIONS.forEach(r => {
-  const icon = L.divIcon({
-    className: '',
-    html: `<div style="font-family:'DM Mono',monospace;font-size:10px;color:${r.color};letter-spacing:0.5px;white-space:nowrap;cursor:pointer;display:inline-block;background:rgba(245,243,238,0.85);padding:2px 6px;border-radius:3px;transform:${r.id==='west' ? 'translateX(-100%)' : r.id==='upstate' ? 'translateX(-90%)' : r.id==='elsewhere' ? 'translate(-20%, 6px)' : 'translateX(-65%)'}">${r.arrow} ${r.label}</div>`,
-    iconSize: [0,0],
-    iconAnchor: [0,9],
-  });
-  regionMarkers.push(L.marker([r.lat, r.lng], {icon, interactive:true, zIndexOffset:100, title:r.label})
-    .on('click', () => flyRegion(r)));
+// Direction controls belong to the map frame, not geographic coordinates.
+REGIONS.forEach(r=>{
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='region-edge';
+  button.dataset.region=r.id;
+  button.style.setProperty('--region-color',r.color);
+  button.textContent=r.id==='longisland'?`${r.label} ${r.arrow}`:`${r.arrow} ${r.label}`;
+  button.addEventListener('click',()=>flyRegion(r));
+  document.getElementById('region-nav').appendChild(button);
 });
 
 // 범례에 추가
@@ -435,7 +437,7 @@ map.on('resize',()=>{
   map.stop();
   map.fitBounds(viewBounds,{padding:[32,32],maxZoom:viewMaxZoom,animate:false});
 });
-showHome(false);
+showHome();
 
 </script>
 <a id="portfolio-btn" href="https://jae-arch05.github.io/Jaeyu-Kim/" target="_blank">Jaeyu Kim →</a>
