@@ -50,6 +50,9 @@ nav{width:100%;border-bottom:1px solid #E0DDD8;background:#F5F3EE;position:stick
 #legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
 .leg-item{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:#888;cursor:pointer;padding:2px 0}
 .leg-item:hover{color:#222}
+.leg-item{background:none;border:0;text-align:left}
+.leg-item[aria-pressed="true"]{color:#1A1A1A;text-decoration:underline;text-underline-offset:3px}
+.leg-item:focus-visible{outline:2px solid #7F77DD;outline-offset:3px}
 .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
 /* Leaflet popup */
@@ -184,10 +187,34 @@ const D={
 };
 
 const map=L.map('map',{zoomControl:false,scrollWheelZoom:false,doubleClickZoom:false,dragging:false,touchZoom:false,boxZoom:false,keyboard:false});
-map.fitBounds([[40.695,-74.032],[40.823,-73.898]]);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
 
-let dL=[],pL=[],isZ=false;
+let dL=[],pL=[],regionMarkers=[];
+let activeView={type:'home',id:null};
+let viewBounds=null,viewMaxZoom=15;
+
+// Replace layers immediately; an interrupted flight must never redraw old pins.
+function clearView(){
+  if(viewBounds)map.stop();
+  map.closePopup();
+  [...dL,...pL,...regionMarkers].forEach(l=>map.removeLayer(l));
+  dL=[];pL=[];
+}
+
+function fitView(bounds,maxZoom=15,animate=true){
+  viewBounds=L.latLngBounds(bounds);
+  viewMaxZoom=maxZoom;
+  map.invalidateSize({pan:false});
+  const options={padding:[32,32],maxZoom,duration:0.5};
+  if(animate)map.flyToBounds(viewBounds,options);
+  else map.fitBounds(viewBounds,options);
+}
+
+function markActiveLegend(){
+  document.querySelectorAll('#legend button').forEach(button=>{
+    button.setAttribute('aria-pressed',String(button.dataset.view===activeView.type&&button.dataset.id===activeView.id));
+  });
+}
 
 function pinIcon(color,count,visited){
   const bg=visited?color:'#C8C3BB';
@@ -204,29 +231,23 @@ function drawDistricts(){
   dL.forEach(l=>map.removeLayer(l));dL=[];
   Object.entries(D).forEach(([id,d])=>{
     const r=L.rectangle(d.bounds,{color:d.color,weight:1.5,fillColor:d.color,fillOpacity:0,dashArray:'6,4'}).addTo(map);
-    let hp=null;
+    r.bindTooltip(ttHTML(d),{sticky:true,direction:'auto',opacity:1});
     r.on('mouseover',function(ev){
       this.setStyle({fillOpacity:0.16,weight:2});
-      const northOffset = id==='sbronx' ? [0,180] : id==='harlem' ? [0,160] : id==='heights' ? [0,120] : [0,-2];
-      const isNorth = ['sbronx','harlem','heights'].includes(id);
-      hp=L.popup({closeButton:false,offset:northOffset,autoPan:isNorth}).setLatLng(ev.latlng).setContent(ttHTML(d)).openOn(map);
     });
-    r.on('mousemove',function(ev){if(hp)hp.setLatLng(ev.latlng);});
-    r.on('mouseout',function(){this.setStyle({fillOpacity:0,weight:1.5});map.closePopup();hp=null;});
+    r.on('mouseout',function(){this.setStyle({fillOpacity:0,weight:1.5});});
     r.on('click',()=>zoom(id));
     dL.push(r);
   });
 }
 
 function zoom(id){
-  if(isZ)return;
-  map.closePopup();isZ=true;
   const d=D[id];
-  dL.forEach(l=>map.removeLayer(l));dL=[];
-  const r=L.rectangle(d.bounds,{color:d.color,weight:2,fillColor:d.color,fillOpacity:0.09,dashArray:'6,4'}).addTo(map);
+  if(!d)return;
+  clearView();
+  activeView={type:'district',id};
+  const r=L.rectangle(d.bounds,{color:d.color,weight:2,fillColor:d.color,fillOpacity:0.09,dashArray:'6,4',interactive:false}).addTo(map);
   dL.push(r);
-  const[[s,w],[n,e]]=d.bounds,pad=0.014;
-  map.flyToBounds([[s-pad,w-pad*1.5],[n+pad,e+pad*1.5]],{duration:0.5});
   document.getElementById('topbar').style.display='flex';
   document.getElementById('bar-name').textContent=`${d.name} / ${d.nameKo}`;
   document.getElementById('bar-vibe').textContent=d.vibe;
@@ -237,11 +258,15 @@ function zoom(id){
   pL.forEach(l=>map.removeLayer(l));pL=[];
   d.galleries.forEach(g=>{
     const vis=g.entries.length>0;
-    const m=L.marker([g.lat,g.lng],{icon:pinIcon(d.color,g.entries.length,vis)}).addTo(map);
+    const m=L.marker([g.lat,g.lng],{icon:pinIcon(d.color,g.entries.length,vis),title:g.name,alt:g.name}).addTo(map);
     m.bindTooltip(`<span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#1A1A1A">${g.name}</span>`,{direction:'top',offset:[0,-10],opacity:1});
     m.on('click',()=>showPop(g));
     pL.push(m);
   });
+  const bounds=L.latLngBounds(d.bounds);
+  d.galleries.forEach(g=>bounds.extend([g.lat,g.lng]));
+  fitView(bounds);
+  markActiveLegend();
 }
 
 function showPop(g){
@@ -259,25 +284,20 @@ function showPop(g){
   L.popup({offset:[0,-10],maxWidth:265}).setLatLng([g.lat,g.lng]).setContent(c).openOn(map);
 }
 
-document.getElementById('back-btn').addEventListener('click',()=>{
-  map.closePopup();
-  if (rZoomed) { backFromRegion(); return; }
-  isZ = false;
-  pL.forEach(l=>map.removeLayer(l)); pL=[];
+function showHome(animate=true){
+  clearView();
+  activeView={type:'home',id:null};
   document.getElementById('topbar').style.display='none';
   document.getElementById('map-wrap').classList.remove('detail-mode');
-  map.flyToBounds([[40.695,-74.032],[40.823,-73.898]],{duration:0.5});
   drawDistricts();
-});
-
-document.getElementById('legend').innerHTML=Object.entries(D).map(([id,d])=>`<div class="leg-item" onclick="legClick('${id}')"><div class="leg-dot" style="background:${d.color}"></div><span>${d.name}</span></div>`).join('');
-function legClick(id) {
-  if (rZoomed) { backFromRegion(); setTimeout(()=>zoom(id), 800); return; }
-  if (isZ) { map.closePopup(); isZ=false; pL.forEach(l=>map.removeLayer(l));pL=[];dL.forEach(l=>map.removeLayer(l));dL=[]; drawDistricts(); setTimeout(()=>zoom(id),100); return; }
-  zoom(id);
+  regionMarkers.forEach(marker=>marker.addTo(map));
+  fitView(HOME_BOUNDS,15,animate);
+  markActiveLegend();
 }
+document.getElementById('back-btn').addEventListener('click',()=>showHome());
 
-drawDistricts();
+document.getElementById('legend').innerHTML=Object.entries(D).map(([id,d])=>`<button type="button" class="leg-item" data-view="district" data-id="${id}" aria-pressed="false" onclick="zoom('${id}')"><span class="leg-dot" style="background:${d.color}"></span><span>${d.name}</span></button>`).join('');
+
 // ════════════════════════════════════════════════════
 // 방향 지역 갤러리 (지도 rectangle 없음 — 핀만)
 // ════════════════════════════════════════════════════
@@ -332,21 +352,18 @@ const REGION_GALLERIES = {
 // ════════════════════════════════════════════════════
 const REGIONS = [
   { id:'upstate',    arrow:'↑', label:'UPSTATE',
-    lat:40.828, lng:-73.955, color:'#7F77DD',
-    bounds:[[40.695,-74.032],[42.900,-70.800]] },
+    lat:40.828, lng:-73.955, color:'#7F77DD' },
   { id:'elsewhere',  arrow:'✈', label:'OTHER STATES / COUNTRIES',
-    lat:40.800, lng:-73.905, color:'#D4537E',
-    bounds:[[-60,-170],[75,170]] },
+    lat:40.800, lng:-73.905, color:'#D4537E' },
   { id:'longisland', arrow:'→', label:'LONG ISLAND',
-    lat:40.736, lng:-73.870, color:'#1D9E75',
-    bounds:[[40.540,-74.032],[41.100,-71.800]] },
+    lat:40.736, lng:-73.870, color:'#1D9E75' },
   { id:'west',       arrow:'←', label:'WEST',
-    lat:40.745, lng:-74.022, color:'#EF9F27',
-    bounds:[[38.700,-76.500],[41.200,-74.032]] },
+    lat:40.745, lng:-74.022, color:'#EF9F27' },
 ];
 
-const HOME_BOUNDS = [[40.695,-74.032],[40.823,-73.898]];
-let rZoomed = false;
+// Include every clickable district and direction marker in the overview.
+const HOME_BOUNDS = L.latLngBounds(Object.values(D).flatMap(d=>d.bounds));
+REGIONS.forEach(r=>HOME_BOUNDS.extend([r.lat,r.lng]));
 
 function clearRegionPins() {
   pL.forEach(l => map.removeLayer(l));
@@ -363,7 +380,7 @@ function drawRegionPins(regionId) {
       html: `<div style="width:12px;height:12px;border-radius:50%;background:${rd.color};border:2.5px solid white;box-shadow:0 1px 6px rgba(0,0,0,0.25);cursor:pointer"></div>`,
       iconSize: [12,12], iconAnchor: [6,6],
     });
-    const m = L.marker([g.lat, g.lng], {icon, zIndexOffset:500}).addTo(map);
+    const m = L.marker([g.lat, g.lng], {icon, zIndexOffset:500, title:g.name, alt:g.name}).addTo(map);
     m.bindTooltip(g.name, {direction:'top', offset:[0,-8], opacity:1, className:''});
     m.on('click', () => showPop(g));
     pL.push(m);
@@ -371,86 +388,53 @@ function drawRegionPins(regionId) {
 }
 
 function flyRegion(r) {
-  if (rZoomed) return;
-  // 구역 보고 있으면 먼저 닫기
-  if (isZ) {
-    map.closePopup();
-    isZ = false;
-    dL.forEach(l=>map.removeLayer(l)); dL=[];
-    pL.forEach(l=>map.removeLayer(l)); pL=[];
-    drawDistricts();
-  }
-  rZoomed = true;
-
-  // topbar 표시
-  document.getElementById('topbar').style.display = 'flex';
-  document.getElementById('bar-name').textContent = r.arrow + ' ' + r.label;
-  document.getElementById('bar-vibe').textContent = '';
-  document.getElementById('bar-count').textContent = '';
+  const rd=REGION_GALLERIES[r.id];
+  if(!rd)return;
+  clearView();
+  activeView={type:'region',id:r.id};
+  document.getElementById('topbar').style.display='flex';
+  document.getElementById('bar-name').textContent=r.arrow+' '+r.label;
+  document.getElementById('bar-vibe').textContent='';
+  document.getElementById('bar-count').textContent='';
   document.getElementById('map-wrap').classList.add('detail-mode');
-
-  // 줌 해제 후 fly
-  map.scrollWheelZoom.enable();
-  map.dragging.enable();
-  map.touchZoom.enable();
-  map.doubleClickZoom.enable();
-
-  map.flyToBounds(r.bounds, {duration:0.8, maxZoom:7});
-
-  // fly 완료 후 핀 그리고 다시 잠금
-  map.once('moveend', function() {
-    drawRegionPins(r.id);
-    map.scrollWheelZoom.disable();
-    map.dragging.disable();
-    map.touchZoom.disable();
-    map.doubleClickZoom.disable();
-  });
-}
-
-function backFromRegion() {
-  if (!rZoomed) return;
-  rZoomed = false;
-  clearRegionPins();
-
-  document.getElementById('topbar').style.display = 'none';
-  document.getElementById('map-wrap').classList.remove('detail-mode');
-
-  map.scrollWheelZoom.enable();
-  map.dragging.enable();
-  map.touchZoom.enable();
-  map.doubleClickZoom.enable();
-  map.flyToBounds(HOME_BOUNDS, {duration:0.6});
-  map.once('moveend', function() {
-    map.scrollWheelZoom.disable();
-    map.dragging.disable();
-    map.touchZoom.disable();
-    map.doubleClickZoom.disable();
-    drawDistricts();
-  });
+  drawRegionPins(r.id);
+  fitView(rd.galleries.map(g=>[g.lat,g.lng]),10);
+  markActiveLegend();
 }
 
 // 화살표 마커 지도에 추가
 REGIONS.forEach(r => {
   const icon = L.divIcon({
     className: '',
-    html: `<div style="font-family:'DM Mono',monospace;font-size:10px;color:${r.color};letter-spacing:0.5px;white-space:nowrap;cursor:pointer;display:inline-block;background:rgba(245,243,238,0.85);padding:2px 6px;border-radius:3px;transform:${r.id==='west' ? 'translateX(-240%)' : r.id==='upstate' ? 'translateX(-90%)' : r.id==='elsewhere' ? 'translate(-20%, 6px)' : 'translateX(-65%)'}">${r.arrow} ${r.label}</div>`,
+    html: `<div style="font-family:'DM Mono',monospace;font-size:10px;color:${r.color};letter-spacing:0.5px;white-space:nowrap;cursor:pointer;display:inline-block;background:rgba(245,243,238,0.85);padding:2px 6px;border-radius:3px;transform:${r.id==='west' ? 'translateX(-100%)' : r.id==='upstate' ? 'translateX(-90%)' : r.id==='elsewhere' ? 'translate(-20%, 6px)' : 'translateX(-65%)'}">${r.arrow} ${r.label}</div>`,
     iconSize: [0,0],
     iconAnchor: [0,9],
   });
-  L.marker([r.lat, r.lng], {icon, interactive:true, zIndexOffset:100})
-    .addTo(map)
-    .on('click', () => flyRegion(r));
+  regionMarkers.push(L.marker([r.lat, r.lng], {icon, interactive:true, zIndexOffset:100, title:r.label})
+    .on('click', () => flyRegion(r)));
 });
 
 // 범례에 추가
 const leg = document.getElementById('legend');
 REGIONS.forEach(r => {
-  const el = document.createElement('div');
+  const el = document.createElement('button');
+  el.type='button';
   el.className = 'leg-item';
-  el.innerHTML = `<div class="leg-dot" style="background:${r.color}"></div><span>${r.arrow} ${r.label}</span>`;
+  el.dataset.view='region';
+  el.dataset.id=r.id;
+  el.setAttribute('aria-pressed','false');
+  el.innerHTML = `<span class="leg-dot" style="background:${r.color}"></span><span>${r.arrow} ${r.label}</span>`;
   el.onclick = () => flyRegion(r);
   leg.appendChild(el);
 });
+
+// Refit the selected view after a viewport/orientation change.
+map.on('resize',()=>{
+  if(!viewBounds)return;
+  map.stop();
+  map.fitBounds(viewBounds,{padding:[32,32],maxZoom:viewMaxZoom,animate:false});
+});
+showHome(false);
 
 </script>
 <a id="portfolio-btn" href="https://jae-arch05.github.io/Jaeyu-Kim/" target="_blank">Jaeyu Kim →</a>
