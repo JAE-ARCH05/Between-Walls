@@ -5,33 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>캔버스 위의 침묵 — Between Walls</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap');
+400&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#F5F3EE;color:#1A1A1A}
-nav{width:100%;border-bottom:1px solid #E0DDD8;background:#F5F3EE;position:sticky;top:0;z-index:100}
+body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#FFFFFF;color:#1A1A1A}
+nav{width:100%;border-bottom:1px solid #E0DDD8;background:#FFFFFF;position:sticky;top:0;z-index:100}
 .nav-inner{max-width:700px;margin:0 auto;padding:0 24px;display:flex;align-items:baseline}
-.nav-title{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:0.5px;color:#1A1A1A;padding:16px 0;margin-right:auto;text-decoration:none}
+.nav-title{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:13px;letter-spacing:0.5px;color:#1A1A1A;padding:16px 0;margin-right:auto;text-decoration:none}
 .nav-title span{font-size:10px;color:#AAA;margin-left:6px;letter-spacing:1px}
 .nav-links{display:flex}
-.nav-link{font-family:'DM Mono',monospace;font-size:11px;color:#AAA;text-decoration:none;padding:16px 16px;letter-spacing:0.5px;border-bottom:2px solid transparent;transition:color 0.15s}
+.nav-link{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:11px;color:#AAA;text-decoration:none;padding:16px 16px;letter-spacing:0.5px;border-bottom:2px solid transparent;transition:color 0.15s}
 .nav-link:hover{color:#1A1A1A}
 article{max-width:700px;margin:0 auto;padding:40px 24px 100px}
-.post-meta{font-family:'DM Mono',monospace;font-size:11px;color:#AAA;letter-spacing:0.5px;margin-bottom:20px;display:flex;gap:16px;flex-wrap:wrap}
+.post-meta{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:11px;color:#AAA;letter-spacing:0.5px;margin-bottom:20px;display:flex;gap:16px;flex-wrap:wrap}
 .meta-dot{width:4px;height:4px;border-radius:50%;background:#D5D1C9;display:inline-block}
-.post-gallery{font-family:'DM Mono',monospace;font-size:12px;color:#888;margin-bottom:12px;letter-spacing:0.3px}
+.post-gallery{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:12px;color:#888;margin-bottom:12px;letter-spacing:0.3px}
 .post-title{font-size:26px;font-weight:400;line-height:1.35;color:#1A1A1A;margin-bottom:6px;letter-spacing:-0.3px}
-.post-title-en{font-family:'DM Mono',monospace;font-size:13px;color:#AAA;letter-spacing:0.3px;margin-bottom:36px}
+.post-title-en{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:13px;color:#AAA;letter-spacing:0.3px;margin-bottom:36px}
 .img-full{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;background:#E0DDD8;display:block;margin-bottom:8px}
 .img-wide{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;background:#E0DDD8;display:block;margin-bottom:8px}
 .img-square{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;background:#E0DDD8;display:block}
-.img-caption{font-family:'DM Mono',monospace;font-size:10px;color:#BBB;margin-bottom:32px;letter-spacing:0.3px}
+.img-caption{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:10px;color:#BBB;margin-bottom:32px;letter-spacing:0.3px}
 .img-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
 .section{margin-bottom:48px}
 .section-label{display:flex;align-items:baseline;gap:10px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #E8E5E0}
-.section-label-ko{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;color:#1A1A1A}
-.section-label-en{font-family:'DM Mono',monospace;font-size:10px;color:#BBB;letter-spacing:1px}
+.section-label-ko{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:11px;letter-spacing:1.5px;color:#1A1A1A}
+.section-label-en{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:10px;color:#BBB;letter-spacing:1px}
 .info-table{display:grid;grid-template-columns:auto 1fr;gap:8px 24px;font-size:13px}
-.info-key{font-family:'DM Mono',monospace;font-size:10px;color:#AAA;letter-spacing:0.5px;padding-top:2px}
+.info-key{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:10px;color:#AAA;letter-spacing:0.5px;padding-top:2px}
 .info-val{color:#444;line-height:1.6}
 .impression{font-size:15px;line-height:1.95;color:#333}
 .impression p{margin-bottom:20px}
@@ -39,17 +39,19 @@ article{max-width:700px;margin:0 auto;padding:40px 24px 100px}
 .work-caption{font-size:12px;color:#888;margin-top:6px;margin-bottom:28px;line-height:1.5}
 .work-caption strong{color:#555;font-weight:500}
 .post-nav{display:flex;justify-content:space-between;margin-top:64px;padding-top:24px;border-top:1px solid #E8E5E0}
-.post-nav a{font-family:'DM Mono',monospace;font-size:11px;color:#AAA;text-decoration:none;letter-spacing:0.3px;transition:color 0.15s}
+.post-nav a{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:11px;color:#AAA;text-decoration:none;letter-spacing:0.3px;transition:color 0.15s}
 .post-nav a:hover{color:#1A1A1A}
 
 /* 이미지 없을 때 placeholder */
-.img-full::after,.img-wide::after,.img-square::after{content:'이미지를 여기에';display:flex;align-items:center;justify-content:center;height:100%;font-family:'DM Mono',monospace;font-size:11px;color:#C0BAB0}
+.img-full::after,.img-wide::after,.img-square::after{content:'이미지를 여기에';display:flex;align-items:center;justify-content:center;height:100%;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;font-size:11px;color:#C0BAB0}
+
+.nav-inner{max-width:1240px;align-items:center;padding:0 40px;min-height:84px}.nav-title{font-size:23px;font-weight:700;letter-spacing:-.8px}.nav-link{font-size:12px;font-weight:700;color:#777}.post-title,.about-title{font-weight:700;letter-spacing:-1px}.page-title{font-size:22px;font-weight:700;color:#111;letter-spacing:0}.img-full,.img-wide,.img-square{border-radius:0}@media(max-width:760px){.nav-inner{padding:20px;align-items:flex-start;flex-direction:column;gap:8px}.nav-title{padding:0}.nav-link{padding:10px 20px 10px 0}.post-row{grid-template-columns:72px 1fr;gap:10px}.post-gallery{grid-column:2;text-align:left}}
 </style>
 </head>
 <body>
 <nav>
   <div class="nav-inner">
-    <a class="nav-title" href="../index.html">BETWEEN WALLS <span>뉴욕 갤러리 아카이브</span></a>
+    <a class="nav-title" href="../index.html">BETWEEN WALLS</a>
     <div class="nav-links">
       <a class="nav-link" href="../index.html">MAP</a>
       <a class="nav-link" href="../archive.html">ARCHIVE</a>
