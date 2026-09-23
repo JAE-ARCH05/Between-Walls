@@ -3,129 +3,45 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Between Walls — NYC Gallery Archive</title>
-<link rel="preconnect" href="https://tile.openstreetmap.org"/>
+<meta name="description" content="Between Walls — 뉴욕을 걸으며 발견한 갤러리와 미술관, 전시와 공간의 기록."/>
+<title>Between Walls — Places, art & notes</title>
+<link rel="preconnect" href="https://vector.openstreetmap.org"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap');
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:#F5F3EE;color:#1A1A1A}
-
-/* ── Portfolio button ── */
-#portfolio-btn{
-  position:fixed;bottom:24px;right:24px;z-index:500;
-  font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.5px;
-  color:#1A1A1A;background:#F5F3EE;
-  border:1px solid #D5D1C9;border-radius:6px;
-  padding:9px 16px;text-decoration:none;
-  transition:background 0.15s,border-color 0.15s;
-  box-shadow:0 2px 12px rgba(0,0,0,0.08);
-}
-#portfolio-btn:hover{background:#EDEBE5;border-color:#B8B3AA}
-
-/* ── NAV ── */
-nav{width:100%;border-bottom:1px solid #E0DDD8;background:#F5F3EE;position:sticky;top:0;z-index:1000}
-.nav-inner{max-width:700px;margin:0 auto;padding:0 24px;display:flex;align-items:baseline;gap:0}
-.nav-title{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:0.5px;color:#1A1A1A;padding:16px 0;margin-right:auto;text-decoration:none}
-.nav-title span{font-size:10px;color:#AAA;margin-left:6px;letter-spacing:1px}
-.nav-links{display:flex;gap:0}
-.nav-link{font-family:'DM Mono',monospace;font-size:11px;color:#AAA;text-decoration:none;padding:16px 16px;letter-spacing:0.5px;border-bottom:2px solid transparent;transition:color 0.15s,border-color 0.15s}
-.nav-link:hover{color:#1A1A1A}
-.nav-link.active{color:#1A1A1A;border-bottom-color:#1A1A1A}
-
-/* ── PAGE ── */
-#app{width:100%;max-width:700px;margin:0 auto;padding:24px 24px 48px}
-
-#topbar{display:none;align-items:center;gap:12px;padding:11px 0 11px;margin-bottom:0;border-bottom:1px solid #E0DDD8}
-.back-btn{font-family:'DM Mono',monospace;font-size:11px;color:#777;cursor:pointer;padding:4px 12px;border:1px solid #D5D1C9;border-radius:5px;background:transparent;letter-spacing:0.3px;transition:background 0.15s}
-.back-btn:hover{background:#EDEBE5}
-#bar-name{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:0.5px}
-#bar-vibe{font-size:11px;color:#999;margin-top:1px}
-#bar-count{font-family:'DM Mono',monospace;font-size:10px;color:#BBB;margin-left:auto;white-space:nowrap}
-
-#map-wrap{position:relative;width:100%;aspect-ratio:1/1;border:1px solid #E0DDD8;border-radius:10px;overflow:hidden;margin-top:20px}
-#map-wrap.detail-mode{border-radius:0 0 10px 10px;margin-top:0}
-#map{width:100%;height:100%}
-#region-nav{position:absolute;inset:0;z-index:450;pointer-events:none}
-#map-wrap.detail-mode #region-nav{display:none}
-.region-edge{position:absolute;pointer-events:auto;display:flex;align-items:center;gap:6px;min-height:32px;padding:7px 10px;border:1px solid #D5D1C9;border-radius:5px;background:#FFFEFB;color:var(--region-color);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.4px;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,0.08);white-space:nowrap}
-.region-edge:hover{background:#F5F3EE;border-color:currentColor}
-.region-edge:focus-visible{outline:2px solid currentColor;outline-offset:3px}
-.region-edge[data-region="upstate"]{top:12px;left:50%;transform:translateX(-50%)}
-.region-edge[data-region="west"]{left:12px;top:50%;transform:translateY(-50%)}
-.region-edge[data-region="longisland"]{right:12px;top:50%;transform:translateY(-50%)}
-.region-edge[data-region="elsewhere"]{bottom:28px;left:50%;transform:translateX(-50%)}
-@media(max-width:480px){.region-edge{font-size:9px;padding:6px 8px}.region-edge[data-region="west"]{left:8px}.region-edge[data-region="longisland"]{right:8px}}
-
-#legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
-.leg-item{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:#888;cursor:pointer;padding:2px 0}
-.leg-item:hover{color:#222}
-.leg-item{background:none;border:0;text-align:left}
-.leg-item[aria-pressed="true"]{color:#1A1A1A;text-decoration:underline;text-underline-offset:3px}
-.leg-item:focus-visible{outline:2px solid #7F77DD;outline-offset:3px}
-.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-
-/* Leaflet popup */
-.leaflet-popup-content-wrapper{background:#FFFEFB;border:1px solid #DDD;border-radius:8px;box-shadow:0 2px 14px rgba(0,0,0,0.09);padding:0}
-.leaflet-popup-content{margin:14px 16px}
-.leaflet-popup-tip-container{display:none}
-.leaflet-popup-close-button{font-size:15px!important;color:#BBB!important;top:8px!important;right:10px!important}
-
-.tt-wrap{max-width:225px;font-family:'DM Sans',sans-serif}
-.tt-name{font-size:13px;font-weight:500;color:#1A1A1A;margin-bottom:3px}
-.tt-vibe{font-size:11px;color:#777;line-height:1.5;margin-bottom:7px}
-.tt-tags{display:flex;flex-wrap:wrap;gap:4px}
-.tt-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace}
-
-.pp-wrap{min-width:200px;max-width:250px;font-family:'DM Sans',sans-serif}
-.pp-name{font-size:13px;font-weight:500;color:#1A1A1A;margin-bottom:2px}
-.pp-cnt{font-family:'DM Mono',monospace;font-size:10px;color:#AAA;margin-bottom:10px}
-.pp-empty{font-size:12px;color:#AAA;font-family:'DM Mono',monospace;margin-top:6px}
-.pp-item{padding:8px 0;border-top:1px solid #EEE;cursor:pointer}
-.pp-item:first-of-type{border-top:none;padding-top:0}
-.pp-date{font-family:'DM Mono',monospace;font-size:10px;color:#AAA;margin-bottom:3px}
-.pp-desc{font-size:12px;color:#555;line-height:1.5}
-.pp-link{font-family:'DM Mono',monospace;font-size:11px;color:#7F77DD;margin-top:4px;display:block}
-.pp-item:hover .pp-desc{color:#1A1A1A}
+:root{--paper:#f7f5ef;--ink:#292823;--muted:#77746d;--line:#dedbd2;--accent:#74658e;--wash:#ece8f0;--mono:'DM Mono',monospace;--sans:'DM Sans',Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;-webkit-font-smoothing:antialiased}button,a{-webkit-tap-highlight-color:transparent}button{font:inherit;color:inherit;cursor:pointer}a{color:inherit;text-decoration:none}button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:4px}button{border:0}img{max-width:100%;display:block}h1,h2,h3,p{margin:0}.shell{max-width:1168px;margin:auto;padding:0 28px}.mono{font-family:var(--mono)}.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}
+.site-header{border-bottom:1px solid var(--line)}.nav-inner{height:82px;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:flex;align-items:center;gap:12px;font-size:21px;font-weight:600;letter-spacing:-.6px}.brand-mark{display:block;width:25px;height:27px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);position:relative}.brand-mark:after{content:'';position:absolute;top:9px;left:6px;right:6px;border-top:2px solid var(--accent)}.nav-links{display:flex;align-items:center;gap:28px;height:100%}.nav-link{display:flex;align-items:center;height:100%;font-size:12px;letter-spacing:.7px;color:var(--muted);position:relative}.nav-link[aria-current]{color:var(--ink)}.nav-link[aria-current]:after{content:'';height:2px;background:var(--accent);position:absolute;bottom:-1px;left:0;right:0}.nav-link:hover{color:var(--ink)}
+.intro{display:flex;justify-content:space-between;gap:32px;align-items:flex-end;padding:37px 0 32px}.intro h1{font-family:Georgia,'Times New Roman',serif;font-size:44px;font-weight:400;letter-spacing:-1.8px;line-height:1.15;margin:10px 0 10px}.intro h1 em{font-weight:400;color:var(--accent)}.intro p{font-size:14px;line-height:1.6;color:var(--muted)}.intro-aside{font-size:11px;line-height:1.9;text-align:right;color:var(--muted);padding-bottom:3px;white-space:nowrap}.intro-aside strong{font-size:12px;color:var(--ink);font-weight:400}
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 322px;gap:30px;align-items:start;border-top:1px solid var(--line);padding-top:23px}.map-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:38px;margin-bottom:12px}.map-heading h2{font-size:17px;font-weight:500;letter-spacing:-.35px}.map-heading p{font-size:11px;color:var(--muted);margin-top:4px}.home-button{padding:7px 0 7px 10px;background:transparent;color:var(--accent);font-family:var(--mono);font-size:11px;white-space:nowrap}.home-button[hidden]{display:none}
+#map-wrap{position:relative;isolation:isolate;height:570px;overflow:hidden;border:1px solid var(--line);border-radius:3px;background:#f0efeb}#map{width:100%;height:100%;background:#f0efeb}.leaflet-container{font-family:var(--sans);background:#f0efeb}.leaflet-control-attribution{font-size:9px!important;background:rgba(247,245,239,.9)!important;color:#76756f!important}.leaflet-control-attribution a{color:#76756f!important}.leaflet-tooltip{border:1px solid var(--line);box-shadow:0 2px 5px #2928230a;font-size:12px;color:var(--ink);padding:6px 9px}.leaflet-tooltip:before{display:none}
+#region-nav{position:absolute;inset:0;z-index:450;pointer-events:none}#map-wrap.detail-mode #region-nav{display:none}.region-edge{position:absolute;pointer-events:auto;background:rgba(247,245,239,.97);border:1px solid #d9d6cf;border-radius:2px;padding:8px 11px;min-height:34px;color:var(--accent);font-family:var(--mono);font-size:10px;letter-spacing:.5px;white-space:nowrap}.region-edge:hover{background:#fffdf9;border-color:var(--accent)}.region-edge[data-region="upstate"]{top:14px;left:50%;transform:translateX(-50%)}.region-edge[data-region="west"]{left:12px;top:50%;transform:translateY(-50%)}.region-edge[data-region="longisland"]{right:12px;top:50%;transform:translateY(-50%)}.region-edge[data-region="elsewhere"]{bottom:29px;left:50%;transform:translateX(-50%)}
+.district-label{background:transparent;border:0}.district-label-inner{display:flex;align-items:center;gap:5px;white-space:nowrap;transform:translate(-5px,-50%);height:24px}.district-dot{display:block;width:7px;height:7px;border-radius:50%;background:var(--accent);border:1px solid #fffdf9;flex-shrink:0}.district-name{font-size:11px;font-weight:500;color:#5a506b;background:#f7f5efe8;padding:3px 5px;border-radius:2px;line-height:1.15}.district-label:hover .district-name,.district-label:focus .district-name{background:var(--accent);color:white}.label-crowded .district-name{visibility:hidden}.label-crowded:hover .district-name,.label-crowded:focus .district-name{visibility:visible}.gallery-pin{background:transparent;border:0}.pin-shape{display:flex;align-items:center;justify-content:center;width:18px;height:18px;border:2px solid #fffefa;border-radius:50%;background:var(--accent);box-shadow:0 0 0 1px #74658e33;color:white;font-family:var(--mono);font-size:9px}.pin-shape.unvisited{background:#fffefa;box-shadow:0 0 0 1px #a8a29a;border:3px solid #fffefa}.pin-shape.unvisited:after{content:'';width:8px;height:8px;border:1px solid #a8a29a;border-radius:50%}.pin-shape.selected{box-shadow:0 0 0 5px #74658e35}.map-context-label{background:none;border:none;pointer-events:none}.map-context-label span{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:#94978e;white-space:nowrap}.map-caption{display:flex;justify-content:space-between;gap:12px;padding:12px 0 16px;color:var(--muted);font-size:11px}.pin-key{display:flex;gap:14px;flex-wrap:wrap}.key-item{display:flex;align-items:center;gap:5px}.key-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}.key-dot.open{background:none;border:1px solid #9c978e}
+.neighborhoods{border-top:1px solid var(--line)}.neighborhoods summary{list-style:none;display:flex;justify-content:space-between;cursor:pointer;padding:16px 0;font-size:11px;letter-spacing:1px;font-family:var(--mono)}.neighborhoods summary::-webkit-details-marker{display:none}.neighborhoods summary:after{content:'−';color:var(--muted)}.neighborhoods:not([open]) summary:after{content:'+'}#legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:18px;padding:0 0 14px}.district-choice{display:flex;align-items:center;justify-content:space-between;gap:5px;text-align:left;background:none;min-height:37px;border-bottom:1px solid #e8e5de;font-size:12px;padding:7px 0;color:#69665f}.district-choice span{overflow-wrap:anywhere}.district-choice small{font-family:var(--mono);font-size:10px;color:#aaa49b}.district-choice:hover,.district-choice[aria-pressed="true"]{color:var(--accent)}.district-choice[aria-pressed="true"] span{box-shadow:0 1px 0 var(--accent)}
+#journal-panel{border-left:1px solid var(--line);padding-left:27px;min-width:0;scroll-margin-top:24px}.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:38px;margin-bottom:12px}.panel-heading h2{font-size:17px;font-weight:500;letter-spacing:-.35px;outline:none}.panel-heading span{font-family:var(--mono);font-size:10px;color:var(--muted)}.featured{display:block}.featured-image{width:100%;height:auto;aspect-ratio:1.42;object-fit:cover;background:#e9e6de}.featured-meta{display:flex;justify-content:space-between;gap:8px;margin:15px 0 8px;color:var(--muted);font-family:var(--mono);font-size:10px}.featured h3{font-size:20px;letter-spacing:-.7px;font-weight:500;line-height:1.5}.featured .english{color:var(--muted);font-family:Georgia,serif;font-style:italic;font-size:15px;margin-top:2px}.text-link{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:11px;color:var(--accent);border-bottom:1px solid #b6acbf;padding-bottom:5px;margin-top:17px}.featured:hover h3{color:var(--accent)}.notes-heading{margin-top:26px;padding-top:19px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.notes-heading h3{font-weight:400;font-size:12px}.notes-heading span{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.7px}.recent-note{display:block;text-align:left;background:none;border-bottom:1px solid #e4e0d8;width:100%;padding:14px 0}.note-meta{display:flex;gap:10px;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:6px}.recent-note strong{font-size:13px;font-weight:500;display:flex;justify-content:space-between}.recent-note strong:after{content:'↗';color:#9a90a8;font-size:14px}.recent-note:hover strong{color:var(--accent)}.recent-note p{margin-top:5px;font-size:12px;line-height:1.6;color:var(--muted);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}.panel-footnote{font-family:Georgia,serif;font-style:italic;font-size:14px;color:#999287;padding-top:20px;line-height:1.5}
+.area-title{font-family:Georgia,serif;font-size:30px;line-height:1.14;letter-spacing:-1px;font-weight:400;margin:12px 0 8px}.area-subtitle{font-size:13px;color:var(--muted);line-height:1.75}.area-stats{font-family:var(--mono);font-size:10px;letter-spacing:.2px;color:var(--accent);padding:17px 0 19px;border-bottom:1px solid var(--line);margin-bottom:2px}.gallery-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:none;width:100%;text-align:left;padding:17px 0;border-bottom:1px solid var(--line)}.gallery-row strong{font-size:14px;font-weight:500;display:block;line-height:1.4}.gallery-row small{font-size:11px;color:var(--muted);display:block;margin-top:5px}.gallery-row:hover strong{color:var(--accent)}.row-arrow{color:var(--accent);font-size:18px}.status-dot{display:inline-block;width:6px;height:6px;background:var(--accent);border-radius:50%;margin-right:5px}.status-dot.open{border:1px solid #a69d91;background:none}.panel-back{background:none;padding:3px 0;font-size:11px;color:var(--accent);font-family:var(--mono);margin-bottom:12px}.gallery-heading{font-family:Georgia,serif;font-weight:400;font-size:28px;letter-spacing:-.5px;line-height:1.2;margin-bottom:9px}.gallery-photo{height:auto;aspect-ratio:1.5;object-fit:cover;margin:20px 0;width:100%}.visit-entry{border-top:1px solid var(--line);padding:18px 0}.visit-entry time{font-family:var(--mono);font-size:10px;color:var(--muted)}.visit-entry p{margin-top:10px;font-size:14px;line-height:1.9}.empty-note{border-top:1px solid var(--line);margin-top:24px;padding-top:20px;color:var(--muted);font-size:14px;line-height:1.8}.map-error{padding:24px;color:var(--muted);font-size:14px}.site-footer{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-top:32px;padding:23px 0 31px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.8}.site-footer a{color:var(--ink)}.site-footer a:hover{color:var(--accent)}
+@media(min-width:1400px){#map-wrap{height:610px}}
+@media(max-width:960px){.workspace{grid-template-columns:minmax(0,1fr) 285px;gap:22px}#journal-panel{padding-left:20px}#map-wrap{height:530px}#legend{grid-template-columns:repeat(2,minmax(0,1fr))}.intro h1{font-size:39px}}
+@media(max-width:760px){.shell{padding:0 20px}.nav-inner{height:72px;gap:15px}.brand{font-size:18px;gap:8px}.brand-mark{width:20px;height:23px}.nav-links{gap:17px}.nav-link{font-size:10px}.intro{padding:28px 0 25px}.intro h1{font-size:37px}.intro-aside{display:none}.intro p{font-size:13px}.workspace{display:block;padding-top:17px}.map-heading h2{font-size:16px}#map-wrap{height:min(112vw,510px)}.map-caption{font-size:10px}.map-caption>span{display:none}#legend{grid-template-columns:repeat(2,minmax(0,1fr))}.neighborhoods summary{padding:15px 0}#journal-panel{border-left:0;border-top:1px solid var(--line);padding:23px 0 0;margin-top:15px}.featured-image{aspect-ratio:1.65}.panel-heading{margin-bottom:15px}.featured h3{font-size:23px}.notes-heading{margin-top:23px}.recent-note{padding:16px 0}.recent-note p{font-size:13px}.site-footer{align-items:flex-start;font-size:9px}.district-name{font-size:10px}.region-edge{font-size:9px;padding:7px 9px}.region-edge[data-region="west"]{left:9px}.region-edge[data-region="longisland"]{right:9px}.eyebrow{font-size:9px;letter-spacing:1.2px}}
+@media(max-width:370px){.shell{padding:0 14px}.nav-links{gap:11px}.brand{font-size:16px}.intro h1{font-size:33px}.map-heading p{font-size:10px}.region-edge{font-size:8px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-
-<nav>
-  <div class="nav-inner">
-    <a class="nav-title" href="index.html">BETWEEN WALLS <span>뉴욕 갤러리 아카이브</span></a>
-    <div class="nav-links">
-      <a class="nav-link active" href="index.html">MAP</a>
-      <a class="nav-link" href="archive.html">ARCHIVE</a>
-      <a class="nav-link" href="about.html">ABOUT</a>
-    </div>
-  </div>
-</nav>
-
-<div id="app">
-  <div id="topbar">
-    <button class="back-btn" id="back-btn">← map</button>
-    <div><div id="bar-name"></div><div id="bar-vibe"></div></div>
-    <span id="bar-count"></span>
-  </div>
-  <div id="map-wrap"><div id="map"></div><div id="region-nav" role="group" aria-label="Explore regions"></div></div>
-  <div id="legend"></div>
+<header class="site-header"><nav class="shell nav-inner" aria-label="Main navigation"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Between Walls</a><div class="nav-links"><a class="nav-link" href="index.html" aria-current="page">MAP</a><a class="nav-link" href="archive.html">ARCHIVE</a><a class="nav-link" href="about.html">ABOUT</a></div></nav></header>
+<main class="shell">
+<section class="intro"><div><div class="eyebrow">An ongoing archive · New York & beyond</div><h1>A city, seen through <em>art.</em></h1><p>걸으며 발견한 공간, 오래 남은 전시.</p></div><div class="intro-aside mono"><strong>Places, art & notes.</strong><br>뉴욕 갤러리 아카이브</div></section>
+<div class="workspace">
+<section class="map-column" aria-label="Gallery map"><div class="map-heading"><div><h2 id="map-title">The neighborhood map</h2><p id="map-subtitle">관심 있는 동네에서 시작해 보세요.</p></div><button class="home-button" id="back-btn" hidden>← All neighborhoods</button></div><div id="map-wrap"><div id="map" aria-label="Interactive gallery map"></div><div id="region-nav" role="group" aria-label="Explore regions"></div></div><div class="map-caption"><div class="pin-key"><span class="key-item"><i class="key-dot"></i>방문한 곳</span><span class="key-item"><i class="key-dot open"></i>아직 가보지 않은 곳</span></div><span>Click a place. Find a story.</span></div><details class="neighborhoods" open><summary>EXPLORE NEIGHBORHOODS <span id="district-count"></span></summary><div id="legend"></div></details></section>
+<aside id="journal-panel" aria-label="Journal and gallery details"><div class="panel-heading"><h2 id="panel-title" tabindex="-1">From the journal</h2><span id="panel-kicker">전시 기록</span></div><div id="panel-content"></div><p class="sr-status" id="view-status" role="status" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%)"></p></aside>
 </div>
-
+<footer class="site-footer"><span>BETWEEN WALLS<br>A personal archive, always in progress.</span><a href="https://jae-arch05.github.io/Jaeyu-Kim/" target="_blank" rel="noopener">Jaeyu Kim ↗</a></footer>
+</main>
 <script>
-// ── 글 데이터 — 새 글 추가할 때 여기도 업데이트 ──────────────
-// posts 배열에 slug를 추가하면 핀 팝업에서 글로 연결됩니다
-const POSTS = [
-  { slug:"gagosian-0415", gallery:"Gagosian", date:"2026.04.15", title:"캔버스 위의 침묵", titleEn:"Silence on Canvas" },
-  { slug:"gagosian-0210", gallery:"Gagosian", date:"2026.02.10", title:"두 번째 방문", titleEn:"Second Visit" },
-  { slug:"met-0330",      gallery:"The Met",  date:"2026.03.30", title:"고요한 혁명",   titleEn:"Quiet Revolution" },
-  { slug:"met-0115",      gallery:"The Met",  date:"2026.01.15", title:"이집트 컬렉션", titleEn:"Egyptian Collection" },
-  { slug:"ps1-0418",      gallery:"MoMA PS1", date:"2026.04.18", title:"Warm Up 시즌", titleEn:"Warm Up Season" },
-];
-
-function getPost(slug){ return POSTS.find(p=>p.slug===slug); }
-
 const D={
   chelsea:{name:"Chelsea",nameKo:"첼시",vibe:"뉴욕 갤러리씬의 심장 · Heart of NYC gallery scene",tags:[{t:"메가갤러리",bg:"#EEEDFE",tc:"#3C3489"},{t:"무료입장",bg:"#E1F5EE",tc:"#0F6E56"}],color:"#7F77DD",bounds:[[40.742,-74.010],[40.752,-73.996]],galleries:[
     {name:"Gagosian",lat:40.7484,lng:-74.0052,entries:[{date:"2026.04.15",desc:"캔버스 위의 침묵 — 거대한 스케일 앞에서 오히려 조용해졌다.",slug:"gagosian-0415"},{date:"2026.02.10",desc:"두 번째 방문. 같은 공간이 다르게 느껴졌다.",slug:"gagosian-0210"}]},
@@ -197,119 +113,6 @@ const D={
   ]},
 };
 
-const map=L.map('map',{zoomControl:false,scrollWheelZoom:false,doubleClickZoom:false,dragging:false,touchZoom:false,boxZoom:false,keyboard:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',maxZoom:19,detectRetina:true,updateWhenIdle:true,updateWhenZooming:false,keepBuffer:1}).addTo(map);
-
-let dL=[],pL=[];
-let activeView={type:'home',id:null};
-let viewBounds=null,viewMaxZoom=15;
-
-// Replace layers immediately; an interrupted flight must never redraw old pins.
-function clearView(){
-  if(viewBounds)map.stop();
-  map.closePopup();
-  [...dL,...pL].forEach(l=>map.removeLayer(l));
-  dL=[];pL=[];
-}
-
-function fitView(bounds,maxZoom=15){
-  viewBounds=L.latLngBounds(bounds);
-  viewMaxZoom=maxZoom;
-  map.invalidateSize({pan:false});
-  // Request the destination tiles directly, without stretching old tiles in flight.
-  map.fitBounds(viewBounds,{padding:[32,32],maxZoom,animate:false});
-}
-
-function markActiveLegend(){
-  document.querySelectorAll('#legend button').forEach(button=>{
-    button.setAttribute('aria-pressed',String(button.dataset.view===activeView.type&&button.dataset.id===activeView.id));
-  });
-}
-
-function pinIcon(color,count,visited){
-  const bg=visited?color:'#C8C3BB';
-  const num=visited&&count>1?`<span style="font-size:9px;font-family:'DM Mono',monospace;color:white;line-height:1">${count}</span>`:'';
-  return L.divIcon({className:'',html:`<div style="width:16px;height:16px;border-radius:50%;background:${bg};border:2.5px solid white;box-shadow:0 1px 5px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer">${num}</div>`,iconSize:[16,16],iconAnchor:[8,8]});
-}
-
-function ttHTML(d){
-  return `<div class="tt-wrap"><div class="tt-name">${d.name} <span style="color:#AAA;font-weight:300">/ ${d.nameKo}</span></div><div class="tt-vibe">${d.vibe}</div><div class="tt-tags">${d.tags.map(t=>`<span class="tt-tag" style="background:${t.bg};color:${t.tc}">${t.t}</span>`).join('')}</div></div>`;
-}
-
-function drawDistricts(){
-  pL.forEach(l=>map.removeLayer(l));pL=[];
-  dL.forEach(l=>map.removeLayer(l));dL=[];
-  Object.entries(D).forEach(([id,d])=>{
-    const r=L.rectangle(d.bounds,{color:d.color,weight:1.5,fillColor:d.color,fillOpacity:0,dashArray:'6,4'}).addTo(map);
-    r.bindTooltip(ttHTML(d),{sticky:true,direction:'auto',opacity:1});
-    r.on('mouseover',function(ev){
-      this.setStyle({fillOpacity:0.16,weight:2});
-    });
-    r.on('mouseout',function(){this.setStyle({fillOpacity:0,weight:1.5});});
-    r.on('click',()=>zoom(id));
-    dL.push(r);
-  });
-}
-
-function zoom(id){
-  const d=D[id];
-  if(!d)return;
-  clearView();
-  activeView={type:'district',id};
-  const r=L.rectangle(d.bounds,{color:d.color,weight:2,fillColor:d.color,fillOpacity:0.09,dashArray:'6,4',interactive:false}).addTo(map);
-  dL.push(r);
-  document.getElementById('topbar').style.display='flex';
-  document.getElementById('bar-name').textContent=`${d.name} / ${d.nameKo}`;
-  document.getElementById('bar-vibe').textContent=d.vibe;
-  const v=d.galleries.filter(g=>g.entries.length>0).length;
-  document.getElementById('bar-count').textContent=`${v} / ${d.galleries.length} visited`;
-  document.getElementById('map-wrap').classList.add('detail-mode');
-
-  pL.forEach(l=>map.removeLayer(l));pL=[];
-  d.galleries.forEach(g=>{
-    const vis=g.entries.length>0;
-    const m=L.marker([g.lat,g.lng],{icon:pinIcon(d.color,g.entries.length,vis),title:g.name,alt:g.name}).addTo(map);
-    m.bindTooltip(`<span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#1A1A1A">${g.name}</span>`,{direction:'top',offset:[0,-10],opacity:1});
-    m.on('click',()=>showPop(g));
-    pL.push(m);
-  });
-  const bounds=L.latLngBounds(d.bounds);
-  d.galleries.forEach(g=>bounds.extend([g.lat,g.lng]));
-  fitView(bounds);
-  markActiveLegend();
-}
-
-function showPop(g){
-  map.closePopup();
-  let c=g.entries.length===0
-    ?`<div class="pp-wrap"><div class="pp-name">${g.name}</div><div class="pp-empty">아직 방문 기록이 없어요</div></div>`
-    :`<div class="pp-wrap"><div class="pp-name">${g.name}</div><div class="pp-cnt">${g.entries.length}회 방문</div>${g.entries.map(e=>{
-        const post=getPost(e.slug);
-        return `<div class="pp-item" onclick="window.location='posts/${e.slug}.html'">
-          <div class="pp-date">${e.date}</div>
-          <div class="pp-desc">${e.desc}</div>
-          <a class="pp-link">글 읽기 · Read post →</a>
-        </div>`;
-      }).join('')}</div>`;
-  L.popup({offset:[0,-10],maxWidth:265}).setLatLng([g.lat,g.lng]).setContent(c).openOn(map);
-}
-
-function showHome(){
-  clearView();
-  activeView={type:'home',id:null};
-  document.getElementById('topbar').style.display='none';
-  document.getElementById('map-wrap').classList.remove('detail-mode');
-  drawDistricts();
-  fitView(HOME_BOUNDS);
-  markActiveLegend();
-}
-document.getElementById('back-btn').addEventListener('click',()=>showHome());
-
-document.getElementById('legend').innerHTML=Object.entries(D).map(([id,d])=>`<button type="button" class="leg-item" data-view="district" data-id="${id}" aria-pressed="false" onclick="zoom('${id}')"><span class="leg-dot" style="background:${d.color}"></span><span>${d.name}</span></button>`).join('');
-
-// ════════════════════════════════════════════════════
-// 방향 지역 갤러리 (지도 rectangle 없음 — 핀만)
-// ════════════════════════════════════════════════════
 const REGION_GALLERIES = {
   upstate: {
     color:'#7F77DD',
@@ -356,90 +159,157 @@ const REGION_GALLERIES = {
   },
 };
 
-// ════════════════════════════════════════════════════
-// 방향 화살표 마커
-// ════════════════════════════════════════════════════
-const REGIONS = [
-  {id:'upstate',arrow:'↑',label:'UPSTATE',color:'#7F77DD'},
-  {id:'elsewhere',arrow:'✈',label:'OTHER STATES / COUNTRIES',color:'#D4537E'},
-  {id:'longisland',arrow:'→',label:'LONG ISLAND',color:'#1D9E75'},
-  {id:'west',arrow:'←',label:'WEST',color:'#EF9F27'},
+
+const ACCENT='#74658e';
+const PUBLISHED_POSTS={
+  'gagosian-0415':{title:'캔버스 위의 침묵',titleEn:'Silence on Canvas',image:'images/gagosian-0415/poster.jpg',gallery:'Gagosian',date:'2026.04.15'}
+};
+const GALLERY_IMAGES={'Gagosian':'images/gagosian-0415/gallery1.jpg','The Met':'images/met-0330/gallery1.avif'};
+const REGIONS=[
+  {id:'upstate',arrow:'↑',label:'UPSTATE',name:'Upstate',nameKo:'업스테이트',vibe:'도시를 벗어나 만나는 예술과 풍경.'},
+  {id:'west',arrow:'←',label:'WEST',name:'West',nameKo:'서쪽으로',vibe:'필라델피아에서 워싱턴까지, 다음 여행의 공간들.'},
+  {id:'longisland',arrow:'→',label:'LONG ISLAND',name:'Long Island',nameKo:'롱 아일랜드',vibe:'동쪽으로 이어지는 미술관과 작은 여행.'},
+  {id:'elsewhere',arrow:'↗',label:'ELSEWHERE',name:'Elsewhere',nameKo:'다른 도시, 다른 나라',vibe:'뉴욕 너머, 오래 기억하고 싶은 장소들.'}
 ];
-
-const HOME_BOUNDS = L.latLngBounds(Object.values(D).flatMap(d=>d.bounds));
-
-function clearRegionPins() {
-  pL.forEach(l => map.removeLayer(l));
-  pL = [];
+const HOME_BOUNDS=[[40.667,-74.045],[40.859,-73.808]];
+const RECENT_VISITS=Object.entries(D).flatMap(([district,d])=>d.galleries.flatMap((g,index)=>g.entries.map(e=>({...e,district,index,gallery:g.name,districtName:d.name})))).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+let map=null,overlays=[],galleryMarkers=[],activeView={type:'home',id:null},selectedGallery=null,viewBounds=null,viewMaxZoom=15;
+const $=id=>document.getElementById(id);
+function escapeHTML(text){return String(text).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function getArea(){return activeView.type==='district'?D[activeView.id]:activeView.type==='region'?{...REGIONS.find(r=>r.id===activeView.id),...REGION_GALLERIES[activeView.id]}:null;}
+function setPanel(title,kicker,html){$('panel-title').textContent=title;$('panel-kicker').textContent=kicker;$('panel-content').innerHTML=html;$('view-status').textContent=title;}
+function homePanel(){
+  const [slug,post]=Object.entries(PUBLISHED_POSTS).sort((a,b)=>b[1].date.localeCompare(a[1].date))[0];
+  setPanel('From the journal','전시 기록',`
+    <a class="featured" href="posts/${slug}.html"><img class="featured-image" src="${post.image}" width="594" height="418" alt="Gagosian 전시 공간" fetchpriority="high"/><div class="featured-meta"><span>${post.gallery} / CHELSEA</span><time>${post.date}</time></div><h3>${post.title}</h3><p class="english">${post.titleEn}</p><span class="text-link">Read the story <span aria-hidden="true">↗</span></span></a>
+    <div class="notes-heading"><h3>최근 방문 메모</h3><span>RECENT NOTES / 03</span></div>
+    ${RECENT_VISITS.map(e=>`<button class="recent-note" data-district="${e.district}" data-gallery="${e.index}"><span class="note-meta"><time>${e.date}</time><span>${escapeHTML(e.districtName)}</span></span><strong>${escapeHTML(e.gallery)}</strong><p>${escapeHTML(e.desc)}</p></button>`).join('')}
+    <p class="panel-footnote">Some places stay with you.</p>`);
 }
-
-function drawRegionPins(regionId) {
-  clearRegionPins();
-  const rd = REGION_GALLERIES[regionId];
-  if (!rd) return;
-  rd.galleries.forEach(g => {
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="width:12px;height:12px;border-radius:50%;background:${rd.color};border:2.5px solid white;box-shadow:0 1px 6px rgba(0,0,0,0.25);cursor:pointer"></div>`,
-      iconSize: [12,12], iconAnchor: [6,6],
-    });
-    const m = L.marker([g.lat, g.lng], {icon, zIndexOffset:500, title:g.name, alt:g.name}).addTo(map);
-    m.bindTooltip(g.name, {direction:'top', offset:[0,-8], opacity:1, className:''});
-    m.on('click', () => showPop(g));
-    pL.push(m);
+function areaPanel(){
+  const d=getArea(),visited=d.galleries.filter(g=>g.entries.length).length;
+  setPanel(activeView.type==='district'?'In this neighborhood':'Beyond the city','장소 둘러보기',`<div class="eyebrow">${escapeHTML(d.nameKo||'')}</div><h3 class="area-title">${escapeHTML(d.name)}</h3><p class="area-subtitle">${escapeHTML(d.vibe)}</p><div class="area-stats">${visited} VISITED &nbsp; / &nbsp; ${d.galleries.length} PLACES</div>${d.galleries.map((g,index)=>`<button class="gallery-row" data-gallery="${index}"><span><strong>${escapeHTML(g.name)}</strong><small><i class="status-dot${g.entries.length?'':' open'}"></i>${g.entries.length?`${g.entries.length}개의 방문 기록`:'아직 방문 전'}</small></span><span class="row-arrow" aria-hidden="true">↗</span></button>`).join('')}`);
+}
+function galleryPanel(index){
+  const d=getArea(),g=d?.galleries[index];if(!g)return;
+  selectedGallery=index;
+  galleryMarkers.forEach((marker,i)=>marker.setIcon(pinIcon(d.galleries[i],i===index)));
+  const photo=GALLERY_IMAGES[g.name];
+  setPanel('A place & its stories','방문 기록',`<button class="panel-back" data-action="area">← ${escapeHTML(d.name)}</button><h3 class="gallery-heading">${escapeHTML(g.name)}</h3><p class="area-subtitle">${escapeHTML(d.nameKo||d.name)} · ${g.entries.length?g.entries.length+'회 방문':'아직 방문 전'}</p>${photo?`<img class="gallery-photo" src="${photo}" alt="${escapeHTML(g.name)} 전시 공간" width="600" height="400"/>`:''}${g.entries.length?[...g.entries].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<article class="visit-entry"><time>${escapeHTML(e.date)}</time><p>${escapeHTML(e.desc)}</p>${PUBLISHED_POSTS[e.slug]?`<a class="text-link" href="posts/${e.slug}.html">글 읽기 · Read story ↗</a>`:''}</article>`).join(''):'<p class="empty-note">아직 방문 기록이 없어요.<br>다음에 만날 공간으로 남겨 둡니다.</p>'}`);
+}
+function clearView(){
+  selectedGallery=null;
+  if(!map)return;
+  if(viewBounds)map.stop();
+  map.closePopup();
+  overlays.forEach(layer=>map.removeLayer(layer));overlays=[];galleryMarkers=[];selectedGallery=null;
+}
+function fitView(bounds,maxZoom=15){
+  viewBounds=L.latLngBounds(bounds);viewMaxZoom=maxZoom;
+  if(!map)return;
+  map.invalidateSize({pan:false});
+  map.fitBounds(viewBounds,{padding:[38,45],maxZoom,animate:false});
+}
+function updateNav(){
+  const home=activeView.type==='home';
+  $('back-btn').hidden=home;$('map-wrap').classList.toggle('detail-mode',!home);
+  document.querySelectorAll('.district-choice').forEach(b=>b.setAttribute('aria-pressed',String(activeView.type==='district'&&b.dataset.district===activeView.id)));
+  if(home){$('map-title').textContent='The neighborhood map';$('map-subtitle').textContent='관심 있는 동네에서 시작해 보세요.';}
+  else {const d=getArea();$('map-title').textContent=d.name;$('map-subtitle').textContent='장소를 선택하면 오른쪽에 기록이 열립니다.';if(window.matchMedia('(max-width:760px)').matches)$('map-subtitle').textContent='장소를 선택하면 아래에 기록이 열립니다.';}
+}
+function pinIcon(g,selected=false){
+  const visited=g.entries.length>0;
+  return L.divIcon({className:'gallery-pin',html:`<span class="pin-shape${visited?'':' unvisited'}${selected?' selected':''}">${g.entries.length>1?g.entries.length:''}</span>`,iconSize:[18,18],iconAnchor:[9,9]});
+}
+function showGallery(index,scroll=false){
+  galleryPanel(index);
+  if(scroll&&window.matchMedia('(max-width:760px)').matches)$('journal-panel').scrollIntoView({behavior:'auto',block:'start'});
+}
+function addGalleryPins(galleries){
+  if(!map)return;
+  galleries.forEach((g,index)=>{
+    const marker=L.marker([g.lat,g.lng],{icon:pinIcon(g),title:g.name,alt:g.name}).addTo(map);
+    marker.getElement()?.setAttribute('aria-label',g.name);
+    marker.bindTooltip(escapeHTML(g.name),{direction:'top',offset:[0,-8],opacity:1});
+    marker.on('click',()=>showGallery(index,true));
+    overlays.push(marker);galleryMarkers.push(marker);
   });
 }
-
-function flyRegion(r) {
-  const rd=REGION_GALLERIES[r.id];
-  if(!rd)return;
-  clearView();
-  activeView={type:'region',id:r.id};
-  document.getElementById('topbar').style.display='flex';
-  document.getElementById('bar-name').textContent=r.arrow+' '+r.label;
-  document.getElementById('bar-vibe').textContent='';
-  document.getElementById('bar-count').textContent='';
-  document.getElementById('map-wrap').classList.add('detail-mode');
-  drawRegionPins(r.id);
-  fitView(rd.galleries.map(g=>[g.lat,g.lng]),10);
-  markActiveLegend();
+function adjustLabels(){
+  if(activeView.type!=='home')return;
+  const occupied=[];
+  document.querySelectorAll('.district-label').forEach(el=>{
+    el.classList.remove('label-crowded');
+    const label=el.querySelector('.district-name'),box=label.getBoundingClientRect();
+    if(occupied.some(b=>box.left<b.right+4&&box.right>b.left-4&&box.top<b.bottom+3&&box.bottom>b.top-3))el.classList.add('label-crowded');
+    else occupied.push(box);
+  });
 }
-
-// Direction controls belong to the map frame, not geographic coordinates.
-REGIONS.forEach(r=>{
-  const button=document.createElement('button');
-  button.type='button';
-  button.className='region-edge';
-  button.dataset.region=r.id;
-  button.style.setProperty('--region-color',r.color);
-  button.textContent=r.id==='longisland'?`${r.label} ${r.arrow}`:`${r.arrow} ${r.label}`;
-  button.addEventListener('click',()=>flyRegion(r));
-  document.getElementById('region-nav').appendChild(button);
-});
-
-// 범례에 추가
-const leg = document.getElementById('legend');
-REGIONS.forEach(r => {
-  const el = document.createElement('button');
-  el.type='button';
-  el.className = 'leg-item';
-  el.dataset.view='region';
-  el.dataset.id=r.id;
-  el.setAttribute('aria-pressed','false');
-  el.innerHTML = `<span class="leg-dot" style="background:${r.color}"></span><span>${r.arrow} ${r.label}</span>`;
-  el.onclick = () => flyRegion(r);
-  leg.appendChild(el);
-});
-
-// Refit the selected view after a viewport/orientation change.
-map.on('resize',()=>{
-  if(!viewBounds)return;
-  map.stop();
-  map.fitBounds(viewBounds,{padding:[32,32],maxZoom:viewMaxZoom,animate:false});
-});
-showHome();
+function showHome(){
+  clearView();activeView={type:'home',id:null};updateNav();homePanel();
+  if(!map)return;
+  fitView(HOME_BOUNDS,12);
+  const order=['chelsea','ues','harlem','lic','dumbo','bushwick','les','soho','ev','midtown','heights','sbronx','wburg','redhook','flushing'];
+  order.forEach(id=>{
+    const d=D[id],bounds=L.latLngBounds(d.bounds);
+    const area=L.rectangle(d.bounds,{color:ACCENT,weight:.7,opacity:.24,fillColor:ACCENT,fillOpacity:.065}).addTo(map);
+    area.on('click',()=>selectDistrict(id));area.on('mouseover',()=>area.setStyle({fillOpacity:.15,opacity:.5}));area.on('mouseout',()=>area.setStyle({fillOpacity:.065,opacity:.24}));overlays.push(area);
+    const name={ues:'Upper East Side',les:'Lower East Side',lic:'Long Island City',heights:'Washington Heights',flushing:'Flushing',soho:'SoHo / TriBeCa',midtown:'Midtown',sbronx:'South Bronx'}[id]||d.name;
+    const label=L.marker(bounds.getCenter(),{title:d.name,alt:d.name,zIndexOffset:300,icon:L.divIcon({className:'district-label',html:`<span class="district-label-inner"><i class="district-dot"></i><span class="district-name">${escapeHTML(name)}</span></span>`,iconSize:[12,24],iconAnchor:[0,0]})}).addTo(map);
+    label.getElement()?.setAttribute('aria-label',d.name);label.on('click',()=>selectDistrict(id));overlays.push(label);
+  });
+  requestAnimationFrame(adjustLabels);
+}
+function selectDistrict(id){
+  const d=D[id];if(!d)return;
+  clearView();activeView={type:'district',id};updateNav();areaPanel();
+  if(!map)return;
+  const bounds=L.latLngBounds(d.bounds);d.galleries.forEach(g=>bounds.extend([g.lat,g.lng]));fitView(bounds,15);
+  const area=L.rectangle(d.bounds,{color:ACCENT,weight:1,opacity:.45,fillColor:ACCENT,fillOpacity:.045,interactive:false}).addTo(map);overlays.push(area);addGalleryPins(d.galleries);
+}
+function selectRegion(id){
+  if(!REGION_GALLERIES[id])return;
+  clearView();activeView={type:'region',id};updateNav();areaPanel();
+  if(!map)return;
+  fitView(getArea().galleries.map(g=>[g.lat,g.lng]),10);addGalleryPins(getArea().galleries);
+}
+function setupBasemap(){
+  const attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>';
+  if(!L.vectorGrid){L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution,updateWhenIdle:true,updateWhenZooming:false,keepBuffer:1}).addTo(map);return;}
+  const styles={};
+  // Hide source labels and transit details; our place names supply the hierarchy.
+  ['water_polygons_labels','water_lines_labels','dam_lines','dam_polygons','pier_lines','pier_polygons','boundary_labels','place_labels','sites','addresses','street_polygons','street_labels','streets_polygons_labels','street_labels_points','aerialways','ferries','public_transport','pois'].forEach(name=>styles[name]=[]);
+  const fill=color=>({fill:true,fillColor:color,fillOpacity:1,stroke:false,weight:0});
+  Object.assign(styles,{
+    ocean:fill('#e3e9e8'),water_polygons:fill('#e3e9e8'),
+    water_lines:{color:'#e3e9e8',weight:1,opacity:1},
+    land:p=>['forest','wood','grass','park','meadow','recreation_ground'].includes(p.kind)?fill('#e7e9de'):[],
+    buildings:fill('#e8e6df'),
+    boundaries:p=>p.admin_level<=4?{color:'#d2cec5',weight:.7,opacity:.7}:[],
+    streets:(p,z)=>{if(p.rail||p.tunnel||['footway','path','cycleway','steps','service','track'].includes(p.kind))return [];const major=['motorway','trunk','primary','secondary'].includes(p.kind);if(z<12&&!major)return [];return {color:major?'#dad6cd':'#fffdf7',weight:z<12?.7:major?1.3:.8,opacity:z<12?.6:1};},
+    bridges:fill('#efece5')
+  });
+  L.vectorGrid.protobuf('https://vector.openstreetmap.org/shortbread_v1/{z}/{x}/{y}.mvt',{rendererFactory:L.svg.tile,vectorTileLayerStyles:styles,interactive:false,maxNativeZoom:14,maxZoom:16,minZoom:0,attribution,updateWhenIdle:true,updateWhenZooming:false,keepBuffer:1}).addTo(map);
+}
+function init(){
+  $('district-count').textContent=String(Object.keys(D).length).padStart(2,'0');
+  $('legend').innerHTML=Object.entries(D).map(([id,d])=>`<button class="district-choice" data-district="${id}" aria-pressed="false"><span>${escapeHTML(d.name)}</span><small>${String(d.galleries.length).padStart(2,'0')}</small></button>`).join('');
+  $('legend').addEventListener('click',e=>{const b=e.target.closest('[data-district]');if(b)selectDistrict(b.dataset.district);});
+  REGIONS.forEach(r=>{const b=document.createElement('button');b.className='region-edge';b.type='button';b.dataset.region=r.id;b.title=r.id==='elsewhere'?'Other states / countries':r.name;b.textContent=r.id==='longisland'?`${r.label} ${r.arrow}`:`${r.arrow} ${r.label}`;b.addEventListener('click',()=>selectRegion(r.id));$('region-nav').appendChild(b);});
+  $('back-btn').addEventListener('click',showHome);
+  $('panel-content').addEventListener('click',e=>{
+    const back=e.target.closest('[data-action="area"]');if(back){selectedGallery=null;galleryMarkers.forEach((m,i)=>m.setIcon(pinIcon(getArea().galleries[i])));areaPanel();return;}
+    const b=e.target.closest('[data-gallery]');if(!b)return;if(b.dataset.district)selectDistrict(b.dataset.district);showGallery(Number(b.dataset.gallery));
+  });
+  document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(selectedGallery!==null){selectedGallery=null;galleryMarkers.forEach((m,i)=>m.setIcon(pinIcon(getArea().galleries[i])));areaPanel();}else if(activeView.type!=='home')showHome();});
+  if(typeof L==='undefined'){$('map').innerHTML='<p class="map-error">지도를 불러오지 못했어요. 아래 지역 목록에서 장소와 기록을 볼 수 있어요.</p>';showHome();return;}
+  map=L.map('map',{zoomControl:false,scrollWheelZoom:false,doubleClickZoom:false,dragging:false,touchZoom:false,boxZoom:false,keyboard:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});
+  setupBasemap();
+  map.on('resize',()=>{if(viewBounds)map.fitBounds(viewBounds,{padding:[38,45],maxZoom:viewMaxZoom,animate:false});requestAnimationFrame(adjustLabels);});
+  showHome();
+}
+window.addEventListener('DOMContentLoaded',init);
 
 </script>
-<a id="portfolio-btn" href="https://jae-arch05.github.io/Jaeyu-Kim/" target="_blank">Jaeyu Kim →</a>
 </body>
 </html>
